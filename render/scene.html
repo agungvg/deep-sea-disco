@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:1280px; height:720px; overflow:hidden; background:#04141c; }
+  body { font-family:"Noto Sans","DejaVu Sans",Arial,sans-serif; }
+  .scene { position:relative; width:1280px; height:720px; overflow:hidden;
+    background:linear-gradient(180deg,#0d5a6b 0%,#0a3a44 34%,#062a33 62%,#041e28 100%); }
+  .ray { position:absolute; top:-40px; width:90px; height:560px;
+    background:linear-gradient(180deg,rgba(255,255,220,.20),rgba(255,255,220,0)); transform:skewX(-14deg); }
+  .bubble { position:absolute; border-radius:50%; border:2px solid rgba(200,245,245,.55);
+    background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%); }
+  .sand { position:absolute; left:0; right:0; bottom:0; height:190px;
+    background:linear-gradient(180deg,#d9b36c,#b8935a 60%,#9c7c48); }
+  .sand::before { content:""; position:absolute; left:0; right:0; top:0; height:14px;
+    background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,0)); }
+  .floor { position:absolute; left:330px; top:430px; width:620px; height:230px;
+    transform:perspective(520px) rotateX(58deg); transform-origin:top center;
+    display:grid; grid-template-columns:repeat(7,1fr); grid-template-rows:repeat(4,1fr); }
+  .tile { border:1px solid rgba(0,0,0,.15); }
+  .tile.a { background:#2ec4b6; } .tile.b { background:#123c48; }
+  .discoball { position:absolute; left:592px; top:96px; width:96px; height:96px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#cfd4dd 45%,#8f97a5 75%,#5f6673);
+    box-shadow:0 0 44px rgba(255,201,60,.55); }
+  .discoball::after { content:""; position:absolute; inset:0; border-radius:50%;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 6px,transparent 6px 12px),
+               repeating-linear-gradient(90deg,rgba(0,0,0,.14) 0 6px,transparent 6px 12px); }
+  .pole { position:absolute; left:638px; top:0; width:6px; height:100px; background:#787878; }
+  .portal { position:absolute; right:36px; top:300px; width:150px; height:190px; }
+  .portal .arch { position:absolute; inset:0; border-radius:75px 75px 0 0; background:#0a0a19;
+    border:7px solid #3a3a55; border-bottom:none; }
+  .portal .glow { position:absolute; left:12px; right:12px; top:12px; bottom:0; border-radius:63px 63px 0 0;
+    background:radial-gradient(ellipse at 50% 90%,#1d3a4a,#05050f 75%); }
+  .portal .ring { position:absolute; left:0; right:0; top:-8px; height:10px; border-radius:5px; background:#b8e62e;
+    box-shadow:0 0 16px #b8e62e; }
+  .portal .label { position:absolute; left:0; right:0; top:70px; text-align:center; color:#b8e62e;
+    font-weight:900; font-size:19px; letter-spacing:2px; text-shadow:0 2px 4px #000; }
+  .kelp { position:absolute; bottom:150px; }
+  .coral { position:absolute; bottom:150px; }
+  .pedestal { position:absolute; width:120px; height:34px; border-radius:50%;
+    background:radial-gradient(ellipse at 50% 30%,#f2f2f5,#c9c9d2 70%,#9a9aa5);
+    box-shadow:0 6px 10px rgba(0,0,0,.35); }
+  .pedestal::after { content:""; position:absolute; left:8px; right:8px; top:4px; height:10px; border-radius:50%;
+    background:rgba(255,255,255,.55); }
+  .critter { position:absolute; width:150px; text-align:center; }
+  .critter svg { display:block; margin:0 auto; filter:drop-shadow(0 4px 4px rgba(0,0,0,.35)); }
+  .critter .nm { color:#fff; font-weight:900; font-size:19px; line-height:1.05; text-shadow:0 2px 3px #000,0 0 2px #000; }
+  .critter .tr { font-weight:900; font-size:15px; letter-spacing:1px; text-shadow:0 2px 3px #000; }
+  .critter .er { color:#b8e62e; font-weight:900; font-size:17px; text-shadow:0 2px 3px #000; }
+  .float { position:absolute; font-weight:900; color:#b8e62e; text-shadow:0 2px 4px #000;
+    font-size:24px; transform:rotate(-3deg); }
+  .burst { position:absolute; width:90px; height:90px; }
+  .burst i { position:absolute; width:10px; height:10px; border-radius:50%; background:#ffd23c;
+    box-shadow:0 0 8px #ffd23c; }
+  .avatar { position:absolute; width:110px; text-align:center; }
+  .hud-money { position:absolute; left:490px; top:12px; width:300px; height:76px; background:#0d2634;
+    border:3px solid #2ec4b6; border-radius:16px; text-align:center; padding-top:4px; }
+  .hud-money .big { color:#b8e62e; font-weight:900; font-size:34px; line-height:1; }
+  .hud-money .rate { color:#ffc93c; font-weight:900; font-size:21px; }
+  .hud-mult { position:absolute; left:806px; top:12px; width:130px; height:52px; background:#ff7a59;
+    border-radius:12px; color:#fff; font-weight:900; font-size:23px; text-align:center; line-height:52px;
+    text-shadow:0 2px 3px rgba(0,0,0,.4); }
+  .hud-title { position:absolute; right:16px; top:88px; width:230px; text-align:right; color:#2ec4b6;
+    font-weight:900; font-size:21px; white-space:nowrap; text-shadow:0 2px 4px #000; letter-spacing:1px; }
+  .hud-btn { position:absolute; right:16px; width:230px; height:52px; border-radius:12px; color:#fff;
+    font-weight:900; font-size:24px; text-align:center; line-height:52px; text-shadow:0 2px 3px rgba(0,0,0,.4);
+    box-shadow:0 4px 8px rgba(0,0,0,.35); }
+  .hint { position:absolute; left:320px; bottom:14px; width:640px; height:34px; background:rgba(13,38,52,.75);
+    border-radius:10px; color:#fff; font-weight:900; font-size:17px; text-align:center; line-height:34px; }
+  .banner { position:absolute; left:140px; right:140px; top:100px; height:86px; border-radius:14px;
+    text-align:center; padding-top:8px; box-shadow:0 6px 18px rgba(0,0,0,.45); }
+  .banner .t { color:#fff; font-weight:900; font-size:34px; line-height:1.05; }
+  .banner .s { color:#fff8dc; font-weight:900; font-size:20px; }
+  .sellprompt { position:absolute; background:#fff; border:4px solid #c0392b; border-radius:14px;
+    padding:8px 16px; text-align:center; box-shadow:0 6px 14px rgba(0,0,0,.4); }
+  .sellprompt .k { display:inline-block; background:#c0392b; color:#fff; font-weight:900; font-size:26px;
+    border-radius:8px; padding:2px 12px; margin-right:10px; }
+  .sellprompt .v { color:#c0392b; font-weight:900; font-size:26px; }
+  .sellprompt .n { color:#333; font-weight:900; font-size:18px; }
+  .tag { position:absolute; background:#c0392b; color:#fff; font-weight:900; font-size:17px;
+    border-radius:8px; padding:4px 10px; box-shadow:0 4px 8px rgba(0,0,0,.4); }
+  .shark { position:absolute; }
+  .panel { position:absolute; left:170px; top:56px; width:940px; height:608px; background:rgba(13,38,52,.96);
+    border:3px solid #2ec4b6; border-radius:18px; padding:18px 22px; }
+  .panel h1 { color:#fff; font-size:34px; font-weight:900; }
+  .panel h1 span { color:#b8e62e; }
+  .panel .x { position:absolute; right:16px; top:14px; width:44px; height:44px; background:#ff7a59;
+    border-radius:10px; color:#fff; font-weight:900; font-size:26px; text-align:center; line-height:44px; }
+  .grid { display:grid; grid-template-columns:repeat(7,1fr); gap:7px; margin-top:14px; }
+  .cell { height:66px; border-radius:8px; padding:5px 6px; font-weight:900; font-size:11.5px; line-height:1.25;
+    color:#fff; text-align:center; }
+  .cell .tier { font-size:10px; letter-spacing:1px; }
+  .cell.dim { background:#183a4a; color:#8ca0aa; }
+  .dimscene { position:absolute; inset:0; background:rgba(4,20,28,.45); }
+</style></head>
+<body><div class="scene" id="scene"></div>
+<script>
+const SHOT = /*SHOT_DATA*/;
+const TIERS = {Common:"#e8d9a0",Rare:"#2ec4b6",Epic:"#ff7a59",Legendary:"#ffc93c",Mythic:"#b388eb",Abyssal:"#b8e62e"};
+const CAST = [
+ ["Bubbles McFin","Common",1,"#ffb066","Fish","Bowtie"],["Sandy Claws","Common",2,"#ff7a59","Crab","Headphones"],
+ ["Wavy Davy","Common",2,"#60a5fa","Eel","Sunglasses"],["Plip Plop","Common",3,"#ffd678","Clam","TopHat"],
+ ["Shelly Belly","Common",4,"#d6b28c","Turtle","Flower"],["Guppy Groovy","Common",5,"#ffcd69","Fish","DiscoBall"],
+ ["Kelpy Keeps","Common",6,"#60be6e","Kelp","Flower"],["Disco Shrimp","Rare",8,"#ff9682","Shrimp","DiscoBall"],
+ ["Bass Bass","Rare",11,"#4682b4","Fish","Headphones"],["Coral Carl","Rare",14,"#ff7a59","Coral","Crown"],
+ ["Jelly Jam","Rare",17,"#ffaad2","Jelly","Bowtie"],["Starry Starr","Rare",20,"#ffdc5a","Star","Sunglasses"],
+ ["Puffer Puff","Rare",23,"#ffd25a","Puffer","TopHat"],["Anemone Annie","Rare",26,"#ff82b4","Anemone","Flower"],
+ ["Electric Eelvis","Epic",40,"#bea0ff","Eel","Sunglasses"],["Squid Vicious","Epic",55,"#9678dc","Squid","Headphones"],
+ ["Manta Ray Charles","Epic",70,"#3c466e","Manta","Bowtie"],["Lobster Thermidor","Epic",85,"#e64632","Lobster","TopHat"],
+ ["Clammy Carter","Epic",100,"#dcc8f0","Clam","Crown"],["Seaweed Sally","Epic",115,"#46b46e","Kelp","Flower"],
+ ["Urchinator","Epic",130,"#5a3c8c","Urchin","Sunglasses"],["Kraken Rolling","Legendary",250,"#783ca0","Kraken","Crown"],
+ ["Sharkira","Legendary",320,"#788caa","Shark","Flower"],["Octo Mami","Legendary",400,"#ff8cb4","Octopus","Headphones"],
+ ["Whaleiam","Legendary",500,"#5a78c8","Whale","TopHat"],["Narwhal Norton","Legendary",580,"#c8dcff","Narwhal","Bowtie"],
+ ["Seabass Sebastian","Legendary",650,"#50a08c","Fish","Crown"],["Dolphin Dolly","Legendary",720,"#8cb4e6","Dolphin","Flower"],
+ ["Leviathan Louie","Mythic",1500,"#285a6e","Eel","Crown"],["Poseidon Pete","Mythic",2000,"#3c8cbe","Merfolk","Trident"],
+ ["Atlantis Annie","Mythic",2600,"#5ac8d2","Merfolk","Crown"],["Abyssal Abby","Mythic",3200,"#463278","Angler","GlowRing"],
+ ["Tsunami Tammy","Mythic",3800,"#50aadc","Wave","Flower"],["Maelstrom Max","Mythic",4400,"#32508c","Whirl","Headphones"],
+ ["Siren C","Mythic",5000,"#dca0ff","Merfolk","GlowRing"],["Mariana Max","Abyssal",10000,"#142846","Trench","GlowRing"],
+ ["Trench Titan","Abyssal",15000,"#3c3c5a","Trench","Crown"],["Bio-Lume","Abyssal",20000,"#1e786e","Angler","GlowRing"],
+ ["Hadal Hank","Abyssal",25000,"#283250","Trench","TopHat"],["Ventsy","Abyssal",30000,"#c85a3c","Vent","Headphones"],
+ ["Glowy McGlow","Abyssal",35000,"#8ce6b4","Angler","GlowRing"],["The Abyssal DJ","Abyssal",40000,"#1e1e32","Merfolk","DiscoBall"]
+];
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+function feature(shape, body, accent){
+  if(shape==="Fish"||shape==="Dolphin"||shape==="Shark"||shape==="Whale"||shape==="Narwhal")
+    return '<polygon points="88,95 112,82 112,110" fill="'+accent+'"/>'
+      +'<polygon points="60,62 52,40 68,40" fill="'+accent+'"/>'
+      +(shape==="Narwhal"?'<rect x="57" y="8" width="7" height="26" rx="3" fill="#f0e6c8" transform="rotate(12 60 20)"/>':"")
+      +(shape==="Whale"?'<circle cx="52" cy="6" r="4" fill="#bfe8f0"/><circle cx="62" cy="2" r="4" fill="#bfe8f0"/>':"");
+  if(shape==="Crab"||shape==="Lobster")
+    return '<circle cx="18" cy="95" r="13" fill="'+body+'"/><circle cx="102" cy="95" r="13" fill="'+body+'"/>';
+  if(shape==="Jelly")
+    return '<path d="M34 52 Q60 18 86 52 L86 44 Q60 14 34 44 Z" fill="'+body+'" opacity="0.85"/>'
+      +'<path d="M44 122 q3 12 0 18 M60 124 q-3 12 0 18 M76 122 q3 12 0 18" stroke="'+accent+'" stroke-width="4" fill="none"/>';
+  if(shape==="Star")
+    return '<circle cx="30" cy="92" r="8" fill="'+body+'"/><circle cx="90" cy="92" r="8" fill="'+body+'"/>'
+      +'<circle cx="60" cy="128" r="8" fill="'+body+'"/>';
+  if(shape==="Squid"||shape==="Octopus"||shape==="Kraken")
+    return '<path d="M40 120 q-4 14 2 20 M52 122 q-2 14 4 20 M68 122 q2 14 -4 20 M80 120 q4 14 -2 20" stroke="'+body+'" stroke-width="7" fill="none" stroke-linecap="round"/>';
+  if(shape==="Eel")
+    return '<path d="M30 120 q15 12 30 0 q15 -12 30 0" stroke="'+body+'" stroke-width="9" fill="none" stroke-linecap="round"/>';
+  if(shape==="Manta")
+    return '<ellipse cx="60" cy="92" rx="52" ry="12" fill="'+body+'"/>';
+  if(shape==="Clam")
+    return '<path d="M30 48 Q60 22 90 48 L90 40 Q60 14 30 40 Z" fill="#dcc8f0"/>';
+  if(shape==="Kelp"||shape==="Coral"||shape==="Anemone")
+    return '<path d="M48 44 q-4 -16 0 -26 M60 44 q0 -18 0 -30 M72 44 q4 -16 0 -26" stroke="'+accent+'" stroke-width="5" fill="none" stroke-linecap="round"/>';
+  if(shape==="Urchin")
+    return '<path d="M60 20 L40 4 M60 20 L80 4 M60 20 L60 0 M60 20 L28 16 M60 20 L92 16" stroke="'+accent+'" stroke-width="3"/>';
+  if(shape==="Puffer")
+    return '<circle cx="36" cy="80" r="4" fill="'+accent+'"/><circle cx="84" cy="80" r="4" fill="'+accent+'"/><circle cx="60" cy="66" r="4" fill="'+accent+'"/>';
+  if(shape==="Merfolk")
+    return '<polygon points="48,124 72,124 60,146" fill="'+accent+'"/>';
+  if(shape==="Angler")
+    return '<path d="M60 22 q0 -14 12 -18" stroke="'+body+'" stroke-width="3" fill="none"/><circle cx="74" cy="2" r="5" fill="#b8e62e"/>';
+  if(shape==="Turtle")
+    return '<ellipse cx="60" cy="96" rx="36" ry="22" fill="#6a9a4a" opacity="0.9"/>';
+  if(shape==="Shrimp")
+    return '<path d="M30 96 q-14 -8 -10 -22 M90 96 q14 -8 10 -22" stroke="'+body+'" stroke-width="7" fill="none" stroke-linecap="round"/>';
+  if(shape==="Wave"||shape==="Whirl")
+    return '<path d="M28 100 q16 -12 32 0 q16 12 32 0" stroke="'+accent+'" stroke-width="6" fill="none"/>';
+  if(shape==="Vent")
+    return '<circle cx="46" cy="30" r="6" fill="#888" opacity=".7"/><circle cx="60" cy="18" r="8" fill="#888" opacity=".55"/><circle cx="74" cy="30" r="6" fill="#888" opacity=".7"/>';
+  if(shape==="Trench")
+    return '<circle cx="40" cy="70" r="4" fill="#b8e62e"/><circle cx="80" cy="70" r="4" fill="#b8e62e"/><circle cx="60" cy="60" r="4" fill="#b8e62e"/>';
+  return "";
+}
+function prop(p, accent){
+  if(p==="DiscoBall") return '<circle cx="60" cy="6" r="13" fill="#d2d2dc" stroke="#888" stroke-width="1"/><path d="M47 6 h26 M60 -7 v26 M50 -4 l20 20 M70 -4 l-20 20" stroke="#999" stroke-width="1"/>';
+  if(p==="Headphones") return '<path d="M34 46 Q60 12 86 46" stroke="'+accent+'" stroke-width="6" fill="none"/><rect x="28" y="42" width="12" height="18" rx="5" fill="'+accent+'"/><rect x="80" y="42" width="12" height="18" rx="5" fill="'+accent+'"/>';
+  if(p==="Sunglasses") return '<rect x="36" y="40" width="20" height="11" rx="4" fill="#14141e"/><rect x="64" y="40" width="20" height="11" rx="4" fill="#14141e"/><rect x="54" y="43" width="8" height="4" fill="#14141e"/>';
+  if(p==="Crown") return '<polygon points="38,26 44,8 54,20 60,6 66,20 76,8 82,26" fill="#ffc93c" stroke="#b8860b" stroke-width="1"/>';
+  if(p==="TopHat") return '<rect x="42" y="6" width="36" height="24" fill="#1e1e2d"/><rect x="34" y="28" width="52" height="6" rx="3" fill="#1e1e2d"/>';
+  if(p==="Bowtie") return '<polygon points="60,84 44,76 44,92" fill="'+accent+'"/><polygon points="60,84 76,76 76,92" fill="'+accent+'"/><circle cx="60" cy="84" r="4" fill="'+accent+'"/>';
+  if(p==="Flower") return '<circle cx="84" cy="24" r="5" fill="'+accent+'"/><circle cx="92" cy="30" r="5" fill="'+accent+'"/><circle cx="84" cy="36" r="5" fill="'+accent+'"/><circle cx="76" cy="30" r="5" fill="'+accent+'"/><circle cx="84" cy="30" r="4" fill="#ffc93c"/>';
+  if(p==="Trident") return '<rect x="100" y="30" width="4" height="80" fill="#ffc93c"/><path d="M94 34 v-12 M102 34 v-16 M110 34 v-12" stroke="#ffc93c" stroke-width="4"/>';
+  if(p==="GlowRing") return '<ellipse cx="60" cy="98" rx="46" ry="10" fill="none" stroke="#b8e62e" stroke-width="5"/>';
+  return "";
+}
+function critterSVG(c, scale){
+  const [name,tier,earn,body,shape,pr] = c;
+  const accent = TIERS[tier];
+  return '<svg width="'+Math.round(120*scale)+'" height="'+Math.round(150*scale)+'" viewBox="0 0 120 150">'
+    +'<ellipse cx="60" cy="144" rx="34" ry="6" fill="rgba(0,0,0,.3)"/>'
+    +'<rect x="46" y="118" width="10" height="24" rx="5" fill="'+accent+'" transform="rotate(10 51 130)"/>'
+    +'<rect x="64" y="118" width="10" height="24" rx="5" fill="'+accent+'" transform="rotate(-10 69 130)"/>'
+    +'<rect x="22" y="70" width="10" height="34" rx="5" fill="'+body+'" transform="rotate(48 27 87)"/>'
+    +'<rect x="88" y="58" width="10" height="34" rx="5" fill="'+body+'" transform="rotate(-58 93 75)"/>'
+    +feature(shape, body, accent)
+    +'<ellipse cx="60" cy="100" rx="27" ry="28" fill="'+body+'"/>'
+    +'<circle cx="60" cy="48" r="26" fill="'+body+'"/>'
+    +'<ellipse cx="50" cy="46" rx="6" ry="8" fill="#fff"/><ellipse cx="70" cy="46" rx="6" ry="8" fill="#fff"/>'
+    +'<circle cx="51" cy="47" r="3.4" fill="#14141e"/><circle cx="71" cy="47" r="3.4" fill="#14141e"/>'
+    +'<circle cx="38" cy="58" r="4" fill="#ff9696" opacity=".85"/><circle cx="82" cy="58" r="4" fill="#ff9696" opacity=".85"/>'
+    +'<path d="M52 62 Q60 68 68 62" stroke="#3c1e1e" stroke-width="2.6" fill="none" stroke-linecap="round"/>'
+    +prop(pr, accent)
+    +'</svg>';
+}
+function placeCritter(x, y, c, scale){
+  scale = scale || 1;
+  const [name,tier,earn] = c;
+  return '<div class="critter" style="left:'+x+'px;top:'+y+'px;width:150px">'
+    + critterSVG(c, scale)
+    + '<div class="nm">'+esc(name)+'</div><div class="tr" style="color:'+TIERS[tier]+'">'+tier.toUpperCase()+'</div>'
+    + '<div class="er">+$'+earn+'/s</div></div>';
+}
+function pedestal(x, y){ return '<div class="pedestal" style="left:'+x+'px;top:'+y+'px"></div>'; }
+function find(name){ return CAST.find(c=>c[0]===name); }
+
+const S = document.getElementById("scene");
+let h = "";
+// water rays + bubbles
+[180,420,760,1020].forEach(x=>{ h += '<div class="ray" style="left:'+x+'px"></div>'; });
+[[90,120,14],[220,80,10],[330,200,18],[520,60,9],[700,150,13],[880,90,11],[1050,170,16],[1180,110,10],[150,300,12],[980,260,9],[640,220,12],[420,320,9]].forEach(b=>{
+  h += '<div class="bubble" style="left:'+b[0]+'px;top:'+b[1]+'px;width:'+b[2]+'px;height:'+b[2]+'px"></div>';
+});
+h += '<div class="sand"></div>';
+// dance floor tiles
+h += '<div class="floor">';
+for(let r=0;r<4;r++) for(let c=0;c<7;c++) h += '<div class="tile '+(((r+c)%2===0)?"a":"b")+'"></div>';
+h += '</div>';
+h += '<div class="pole"></div><div class="discoball"></div>';
+h += '<div class="portal"><div class="arch"></div><div class="glow"></div><div class="ring"></div><div class="label">THE<br>TRENCH</div></div>';
+// kelp + coral dressing
+h += '<svg class="kelp" style="left:60px" width="90" height="150" viewBox="0 0 90 150"><path d="M20 150 q-8 -60 4 -120 M45 150 q4 -70 -6 -135 M70 150 q-4 -55 8 -110" stroke="#46b46e" stroke-width="9" fill="none" stroke-linecap="round"/></svg>';
+h += '<svg class="kelp" style="right:230px" width="80" height="130" viewBox="0 0 80 130"><path d="M20 130 q-6 -50 4 -100 M45 130 q4 -60 -6 -115 M66 130 q-4 -45 6 -90" stroke="#46b46e" stroke-width="8" fill="none" stroke-linecap="round"/></svg>';
+h += '<svg class="coral" style="left:210px" width="110" height="90" viewBox="0 0 110 90"><path d="M55 90 q-4 -30 -16 -44 M55 90 q2 -34 18 -48 M55 90 q0 -26 0 -44" stroke="#ff7a59" stroke-width="10" fill="none" stroke-linecap="round"/><circle cx="39" cy="42" r="9" fill="#ff7a59"/><circle cx="73" cy="38" r="9" fill="#ff7a59"/><circle cx="55" cy="42" r="9" fill="#ff8a6b"/></svg>';
+h += '<svg class="coral" style="right:60px;bottom:330px" width="90" height="70" viewBox="0 0 90 70"><path d="M45 70 q-4 -24 -14 -36 M45 70 q2 -26 14 -38" stroke="#ff7a59" stroke-width="9" fill="none" stroke-linecap="round"/><circle cx="31" cy="30" r="8" fill="#ff7a59"/><circle cx="59" cy="28" r="8" fill="#ff7a59"/></svg>';
+
+// ---- per-shot staging ----
+if(SHOT.id===1){
+  h += pedestal(300,520)+pedestal(560,540)+pedestal(820,520);
+  h += placeCritter(275,330,find("Bubbles McFin"),1.0);
+  h += placeCritter(535,350,find("Disco Shrimp"),1.0);
+  h += placeCritter(795,330,find("Electric Eelvis"),1.0);
+  h += placeCritter(105,430,find("Guppy Groovy"),0.9);
+  h += placeCritter(1060,430,find("Jelly Jam"),0.9);
+  // player avatar carrying a critter, mid-walk to base
+  h += '<div class="avatar" style="left:430px;top:430px">'
+    + '<svg width="110" height="170" viewBox="0 0 110 170"><ellipse cx="55" cy="164" rx="30" ry="5" fill="rgba(0,0,0,.3)"/>'
+    + '<rect x="38" y="118" width="14" height="42" rx="4" fill="#3aa655"/><rect x="58" y="118" width="14" height="42" rx="4" fill="#3aa655"/>'
+    + '<rect x="30" y="66" width="50" height="54" rx="8" fill="#2b6fd6"/>'
+    + '<rect x="12" y="70" width="14" height="40" rx="6" fill="#f5cd30" transform="rotate(18 19 90)"/>'
+    + '<rect x="84" y="70" width="14" height="40" rx="6" fill="#f5cd30" transform="rotate(-18 91 90)"/>'
+    + '<circle cx="55" cy="40" r="26" fill="#f5cd30"/>'
+    + '<ellipse cx="45" cy="38" rx="4" ry="6" fill="#222"/><ellipse cx="65" cy="38" rx="4" ry="6" fill="#222"/>'
+    + '<path d="M44 52 Q55 60 66 52" stroke="#222" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>'
+    + '<div style="color:#fff;font-weight:900;font-size:15px;text-shadow:0 2px 3px #000">Lyso</div></div>';
+  // carried critter above the player's head, mid-hop
+  h += '<div style="position:absolute;left:412px;top:292px">'+critterSVG(find("Sandy Claws"),0.85)+'</div>';
+  h += '<div class="float" style="left:620px;top:282px">+$8/s</div>';
+  h += '<div class="float" style="left:830px;top:290px;font-size:20px">+$40/s</div>';
+  h += '<div class="float" style="left:300px;top:310px;font-size:20px">+$1/s</div>';
+  h += '<div class="hint">Carry Disco Shrimp to your base — press E on the pad to deposit!</div>';
+}
+if(SHOT.id===2){
+  h += pedestal(560,540)+pedestal(300,520)+pedestal(820,520);
+  h += placeCritter(275,330,find("Bubbles McFin"),1.0);
+  h += placeCritter(795,330,find("Kraken Rolling"),1.05);
+  // deposit moment: Guppy Groovy mid-air above an empty pedestal, burst around it
+  h += '<div style="position:absolute;left:560px;top:300px">'+critterSVG(find("Guppy Groovy"),1.0)+'</div>';
+  h += '<div class="burst" style="left:575px;top:320px">'
+    + '<i style="left:-6px;top:38px;width:14px;height:14px"></i><i style="left:82px;top:28px;width:14px;height:14px"></i><i style="left:38px;top:-6px;width:14px;height:14px"></i><i style="left:72px;top:78px;width:14px;height:14px"></i>'
+    + '<i style="left:4px;top:78px;width:14px;height:14px;background:#2ec4b6;box-shadow:0 0 8px #2ec4b6"></i><i style="left:42px;top:42px;width:16px;height:16px;background:#ff7a59;box-shadow:0 0 10px #ff7a59"></i></div>';
+  h += '<div class="float" style="left:640px;top:270px">+$5/s</div>';
+  h += '<div class="sellprompt" style="left:470px;top:180px"><span class="k">E</span><span class="v">Sell +$240</span><br><span class="n">Guppy Groovy</span></div>';
+  h += '<div class="avatar" style="left:430px;top:430px">'
+    + '<svg width="110" height="170" viewBox="0 0 110 170"><ellipse cx="55" cy="164" rx="30" ry="5" fill="rgba(0,0,0,.3)"/>'
+    + '<rect x="38" y="118" width="14" height="42" rx="4" fill="#3aa655"/><rect x="58" y="118" width="14" height="42" rx="4" fill="#3aa655"/>'
+    + '<rect x="30" y="66" width="50" height="54" rx="8" fill="#2b6fd6"/>'
+    + '<rect x="12" y="70" width="14" height="40" rx="6" fill="#f5cd30" transform="rotate(18 19 90)"/>'
+    + '<rect x="84" y="70" width="14" height="40" rx="6" fill="#f5cd30" transform="rotate(-18 91 90)"/>'
+    + '<circle cx="55" cy="40" r="26" fill="#f5cd30"/>'
+    + '<ellipse cx="45" cy="38" rx="4" ry="6" fill="#222"/><ellipse cx="65" cy="38" rx="4" ry="6" fill="#222"/>'
+    + '<path d="M44 52 Q55 60 66 52" stroke="#222" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>'
+    + '<div style="color:#fff;font-weight:900;font-size:15px;text-shadow:0 2px 3px #000">Lyso</div></div>';
+  h += '<div class="hint">Deposit on a pedestal to earn every second — or press E to sell!</div>';
+}
+if(SHOT.id===3){
+  h += pedestal(300,520)+pedestal(560,540)+pedestal(820,520);
+  h += placeCritter(275,330,find("Whaleiam"),1.05);
+  h += placeCritter(535,350,find("Disco Shrimp"),1.0);
+  h += placeCritter(795,330,find("Poseidon Pete"),1.0);
+  h += '<div class="banner" style="background:#ffc93c;top:128px"><div class="t">DISCO FEVER!</div><div class="s">Every base pays x2 Bubbles for 45 seconds!</div></div>';
+  h += '<div class="banner" style="background:#c0392b;top:224px;height:64px;padding-top:6px"><div class="s" style="font-size:19px">The Net Nabber grabbed your Octo Mami! Tag him before the portal!</div></div>';
+  // thief crab near the right pedestal
+  h += '<svg style="position:absolute;left:950px;top:470px" width="110" height="80" viewBox="0 0 110 80">'
+    + '<ellipse cx="55" cy="72" rx="40" ry="8" fill="rgba(0,0,0,.3)"/>'
+    + '<ellipse cx="55" cy="48" rx="34" ry="22" fill="#e64632"/>'
+    + '<circle cx="28" cy="46" r="13" fill="#ff7a59"/><circle cx="82" cy="46" r="13" fill="#ff7a59"/>'
+    + '<circle cx="45" cy="26" r="6" fill="#fff"/><circle cx="65" cy="26" r="6" fill="#fff"/>'
+    + '<circle cx="46" cy="27" r="3" fill="#222"/><circle cx="66" cy="27" r="3" fill="#222"/>'
+    + '<circle cx="55" cy="14" r="9" fill="#b8e62e" opacity=".85"/></svg>';
+  h += '<div class="tag" style="left:930px;top:440px">NET NABBER!</div>';
+  // shark crossing the floor
+  h += '<svg class="shark" style="left:180px;top:600px" width="260" height="90" viewBox="0 0 260 90">'
+    + '<ellipse cx="130" cy="45" rx="110" ry="32" fill="#788caa"/>'
+    + '<polygon points="120,18 140,0 158,20" fill="#5a6e8c"/><polygon points="235,45 258,20 258,70" fill="#5a6e8c"/>'
+    + '<circle cx="60" cy="40" r="6" fill="#fff"/><circle cx="61" cy="41" r="3" fill="#222"/>'
+    + '<path d="M30 55 q14 8 28 0" stroke="#5a6e8c" stroke-width="3" fill="none"/></svg>';
+  h += '<div class="tag" style="left:210px;top:585px;background:#c0392b">SHARK SWEEP — STAY OUT OF THE DEEP!</div>';
+  h += '<div class="float" style="left:560px;top:300px">+$16/s</div>';
+  h += '<div class="float" style="left:830px;top:290px;font-size:20px">+$4,000/s</div>';
+  h += '<div class="hint">Disco Fever is live — tag the crab, dodge the shark!</div>';
+}
+if(SHOT.id===4){
+  h += '<div class="dimscene"></div>';
+  h += '<div class="panel"><h1>INDEX 42/42 <span>(+42% money)</span></h1><div class="x">X</div><div class="grid">';
+  CAST.forEach(c=>{
+    const [name,tier,earn] = c;
+    const lit = SHOT.lit.indexOf(name) >= 0;
+    h += '<div class="cell '+(lit?"":"dim")+'" style="'+(lit?("background:"+TIERS[tier]+";color:#10222e"):"")+'">'
+      + esc(name)+'<br><span class="tier">'+tier.toUpperCase()+'</span><br>+$'+earn+'/s</div>';
+  });
+  h += '</div></div>';
+}
+S.innerHTML = h;
+// ---- HUD (all shots) ----
+let hud = "";
+hud += '<div class="hud-money"><div class="big">$'+SHOT.money+'</div><div class="rate">+$'+SHOT.rate+'/s</div></div>';
+hud += '<div class="hud-mult">'+SHOT.mult+' MONEY</div>';
+if(SHOT.id!==4){
+  hud += '<div class="hud-title">DEEP SEA DISCO</div>';
+  hud += '<div class="hud-btn" style="top:132px;background:#3c78dc">UPGRADES</div>';
+  hud += '<div class="hud-btn" style="top:192px;background:#9664dc">INDEX '+SHOT.index+'</div>';
+  hud += '<div class="hud-btn" style="top:252px;background:#ff7a59">DROP THE BEAT</div>';
+  hud += '<div class="hud-btn" style="top:312px;background:#c83232">GO DARK</div>';
+}
+S.innerHTML += hud;
+</script></body></html>
